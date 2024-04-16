@@ -1,9 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 //HTTP request logger middleware
 const morgan = require("morgan");
 
 const cors = require("cors");
+const Phonebook = require("./models/phonebook");
 
 app.use(cors());
 
@@ -42,6 +44,9 @@ let persons = [
   },
 ];
 
+// mongodb+srv://tedkahcom:FfxYH8mfKt0Ft9qv@cluster0.bkuenha.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+// FfxYH8mfKt0Ft9qv
+
 // const requestLogger = (request, response, next) => {
 //   console.log("Method:", request.method);
 //   console.log("Path: ", request.path);
@@ -53,7 +58,12 @@ let persons = [
 // app.use(requestLogger);
 
 app.get("/api/persons", (request, response) => {
-  response.json(persons);
+  // response.json(persons);
+  Phonebook.find({}).then((phoneBooks) => {
+    console.log("phoneBooks");
+    // console.log(response);
+    response.json(phoneBooks);
+  });
 });
 
 app.get("/api/info", (request, response) => {
