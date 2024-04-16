@@ -103,8 +103,17 @@ app.post("/api/persons", (request, response) => {
     });
   }
 
-  persons = persons.concat(newPerson);
-  response.json(newPerson);
+  // persons = persons.concat(newPerson);
+  const person = new Phonebook({
+    name: newPerson.name,
+    number: newPerson.number,
+  });
+
+  person.save().then((savedPerson) => {
+    response.json(savedPerson);
+  });
+
+  // response.json(newPerson);
 });
 // The name or number is missing
 // The name already exists in the phonebook
