@@ -73,22 +73,37 @@ app.get("/api/info", (request, response) => {
 });
 
 app.get("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  Phonebook.findById(request.params.id).then((person) => {
-    response.json(person);
-  });
+  // const id = Number(request.params.id);
+  Phonebook.findById(request.params.id)
+    .then((person) => {
+      response.json(person);
+    })
+    .catch((error) => {
+      response.status(404).end();
+    });
   // if (person) {
   //   response.json(person);
   // } else {
-  //   response.status(404).end();
+  // response.status(404).end();
   // }
 });
 
 app.delete("/api/persons/:id", (request, response) => {
-  const id = Number(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
-  console.log(persons);
-  response.status(204).end();
+  // const id = Number(request.params.id);
+  // persons = persons.filter((person) => person.id !== id);
+  // console.log(persons);
+  // response.status(204).end();
+  Phonebook.findByIdAndDelete(request.params.id)
+    .then((deletedPerson) => {
+      if (deletedPerson) {
+        response.json({ message: "Person deleted successfully" });
+      } else {
+        response.status(404).json({ error: "Person not found" });
+      }
+    })
+    .catch((error) => {
+      response.status(500).json({ error: "Internal Server Error" });
+    });
 });
 
 app.post("/api/persons", (request, response) => {
