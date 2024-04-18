@@ -21,42 +21,6 @@ app.use(
   )
 );
 
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
-// mongodb+srv://tedkahcom:FfxYH8mfKt0Ft9qv@cluster0.bkuenha.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
-// FfxYH8mfKt0Ft9qv
-
-// const requestLogger = (request, response, next) => {
-//   console.log("Method:", request.method);
-//   console.log("Path: ", request.path);
-//   console.log("Body: ", request.body);
-//   console.log("---");
-//   next();
-// };
-
-// app.use(requestLogger);
-
 app.get("/api/persons", (request, response) => {
   // response.json(persons);
   Phonebook.find({}).then((phoneBooks) => {
@@ -67,43 +31,35 @@ app.get("/api/persons", (request, response) => {
 });
 
 app.get("/api/info", (request, response) => {
-  response.send(
-    `<p>Phonebook has info for ${persons.length} people <br/> ${new Date()}</p>`
-  );
+  response
+    .send
+    // `<p>Phonebook has info for ${persons.length} people <br/> ${new Date()}</p>`
+    ();
 });
 
-app.get("/api/persons/:id", (request, response) => {
-  // const id = Number(request.params.id);
+app.get("/api/persons/:id", (request, response, next) => {
   Phonebook.findById(request.params.id)
     .then((person) => {
-      response.json(person);
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
     })
-    .catch((error) => {
-      response.status(404).end();
-    });
-  // if (person) {
-  //   response.json(person);
-  // } else {
-  // response.status(404).end();
-  // }
+    .catch((error) => next(error));
 });
 
 app.delete("/api/persons/:id", (request, response) => {
-  // const id = Number(request.params.id);
-  // persons = persons.filter((person) => person.id !== id);
-  // console.log(persons);
-  // response.status(204).end();
   Phonebook.findByIdAndDelete(request.params.id)
     .then((deletedPerson) => {
+      console.log(deletedPerson);
       if (deletedPerson) {
-        response.json({ message: "Person deleted successfully" });
+        response.json(deletedPerson);
       } else {
         response.status(404).json({ error: "Person not found" });
       }
     })
-    .catch((error) => {
-      response.status(500).json({ error: "Internal Server Error" });
-    });
+    .catch((error) => next(error));
 });
 
 app.post("/api/persons", (request, response) => {
@@ -112,12 +68,6 @@ app.post("/api/persons", (request, response) => {
     return response
       .status(400)
       .json({ error: "The name or number is misssing" });
-  }
-  let nameExist = persons.find((person) => person.name === newPerson.name);
-  if (nameExist) {
-    return response.status(400).json({
-      error: "name must be unique",
-    });
   }
 
   // persons = persons.concat(newPerson);
@@ -132,8 +82,30 @@ app.post("/api/persons", (request, response) => {
 
   // response.json(newPerson);
 });
-// The name or number is missing
-// The name already exists in the phonebook
+
+app.put("/api/persons/:id", (request, response) => {
+  const body = request.body;
+  const person = {
+    name: body.name,
+    number: body.number,
+  };
+  Phonebook.findByIdAndUpdate(request.params.id, person, { new: true })
+    .then((updatedPerson) => {
+      response.json(updatedPerson);
+    })
+    .catch((error) => next(error));
+});
+
+const errorHandler = (error, request, response, next) => {
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
+  } else {
+    return response.status(500).json({ error: "Internal Server Error" });
+  }
+  next(error);
+};
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
