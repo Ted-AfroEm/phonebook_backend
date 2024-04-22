@@ -1,43 +1,38 @@
-require("dotenv").config();
-const express = require("express");
-const app = express();
-//HTTP request logger middleware
-const morgan = require("morgan");
+require('dotenv').config();
 
-const cors = require("cors");
-const Phonebook = require("./models/phonebook");
+const express = require('express');
+
+const app = express();
+
+const morgan = require('morgan');
+
+const cors = require('cors');
+const Phonebook = require('./models/phonebook');
 
 app.use(cors());
-
-morgan.token("datasent", function dataSent(req) {
-  return JSON.stringify(req.body);
-});
 
 app.use(express.json());
 
 app.use(
   morgan(
-    ":method :url :status :res[content-length] - :response-time ms :datasent"
-  )
+    ':method :url :status :res[content-length] - :response-time ms :datasent',
+  ),
 );
 
-app.get("/api/persons", (request, response) => {
+morgan.token('datasent', (req) => JSON.stringify(req.body));
+
+app.get('/api/persons', (request, response) => {
   // response.json(persons);
   Phonebook.find({}).then((phoneBooks) => {
-    console.log("phoneBooks");
     // console.log(response);
     response.json(phoneBooks);
   });
 });
 
-app.get("/api/info", (request, response) => {
-  response
-    .send
-    // `<p>Phonebook has info for ${persons.length} people <br/> ${new Date()}</p>`
-    ();
+app.get('/api/info', (request, response) => {
+  response.send`<p>Phonebook has info for ${'???'} people <br/> ${new Date()}</p>`();
 });
-
-app.get("/api/persons/:id", (request, response, next) => {
+app.get('/api/persons/:id', (request, response, next) => {
   Phonebook.findById(request.params.id)
     .then((person) => {
       if (person) {
@@ -49,25 +44,24 @@ app.get("/api/persons/:id", (request, response, next) => {
     .catch((error) => next(error));
 });
 
-app.delete("/api/persons/:id", (request, response) => {
+app.delete('/api/persons/:id', (request, response, next) => {
   Phonebook.findByIdAndDelete(request.params.id)
     .then((deletedPerson) => {
-      console.log(deletedPerson);
       if (deletedPerson) {
         response.json(deletedPerson);
       } else {
-        response.status(404).json({ error: "Person not found" });
+        response.status(404).json({ error: 'Person not found' });
       }
     })
     .catch((error) => next(error));
 });
 
-app.post("/api/persons", (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const newPerson = request.body;
   if (!newPerson.name || !newPerson.number) {
     return response
       .status(400)
-      .json({ error: "The name or number is misssing" });
+      .json({ error: 'The name or number is misssing' });
   }
 
   // persons = persons.concat(newPerson);
@@ -76,15 +70,18 @@ app.post("/api/persons", (request, response) => {
     number: newPerson.number,
   });
 
-  person.save().then((savedPerson) => {
-    response.json(savedPerson);
-  });
+  person
+    .save()
+    .then((savedPerson) => {
+      response.json(savedPerson);
+    })
+    .catch((error) => next(error));
 
-  // response.json(newPerson);
+  return response.json(newPerson);
 });
 
-app.put("/api/persons/:id", (request, response) => {
-  const body = request.body;
+app.put('/api/persons/:id', (request, response, next) => {
+  const { body } = request;
   const person = {
     name: body.name,
     number: body.number,
@@ -97,12 +94,13 @@ app.put("/api/persons/:id", (request, response) => {
 });
 
 const errorHandler = (error, request, response, next) => {
-  if (error.name === "CastError") {
-    return response.status(400).send({ error: "malformatted id" });
-  } else {
-    return response.status(500).json({ error: "Internal Server Error" });
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' });
   }
-  next(error);
+  if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message });
+  }
+  return next(error);
 };
 
 app.use(errorHandler);
